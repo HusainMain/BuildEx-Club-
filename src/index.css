@@ -1,0 +1,240 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+@theme {
+  --color-surface-base: #0A0A0A;
+  --color-surface-elevated: #131313;
+  --color-surface-highest: #1C1B1B;
+  
+  --color-primary: #635BFF;
+  --color-primary-hover: #7C3AED;
+  
+  --color-cyan: #4CD7F6;
+  
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Space Grotesk', var(--font-sans);
+}
+
+body {
+  background-color: var(--color-surface-base);
+  color: white;
+  font-family: var(--font-sans);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══════════════════════════════════
+   PERSPECTIVE GRID BACKGROUND
+═══════════════════════════════════ */
+.perspective-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.perspective-grid::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background-image:
+    linear-gradient(rgba(99, 91, 255, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 91, 255, 0.10) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transform: perspective(500px) rotateX(45deg);
+  transform-origin: center top;
+  animation: grid-scroll 20s linear infinite;
+  opacity: 0.5;
+}
+
+.perspective-grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99, 91, 255, 0.15) 0%, transparent 70%),
+              linear-gradient(to bottom, transparent 60%, var(--color-surface-base) 100%);
+}
+
+@keyframes grid-scroll {
+  0%   { background-position: 0px 0px, 0px 0px; }
+  100% { background-position: 0px 60px, 60px 0px; }
+}
+
+/* ═══════════════════════════════════
+   LEGACY ANIMATED BACKGROUND (kept for compatibility)
+═══════════════════════════════════ */
+.data-flow-bg {
+  display: none; /* replaced by perspective-grid */
+}
+
+/* ═══════════════════════════════════
+   AURORA ORB ANIMATIONS
+═══════════════════════════════════ */
+@keyframes orb-float-cyan {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(60px, -80px) scale(1.08); }
+  66%  { transform: translate(-40px, 40px) scale(0.95); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes orb-float-violet {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(-70px, 50px) scale(1.06); }
+  66%  { transform: translate(50px, -60px) scale(0.97); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.aurora-orb-cyan {
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(76, 215, 246, 0.22) 0%, rgba(76, 215, 246, 0.08) 50%, transparent 70%);
+  filter: blur(150px);
+  pointer-events: none;
+  z-index: 0;
+  top: -100px;
+  left: -80px;
+  animation: orb-float-cyan 18s ease-in-out infinite;
+  will-change: transform;
+}
+
+.aurora-orb-violet {
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.22) 0%, rgba(99, 91, 255, 0.08) 50%, transparent 70%);
+  filter: blur(150px);
+  pointer-events: none;
+  z-index: 0;
+  bottom: -100px;
+  right: -80px;
+  animation: orb-float-violet 22s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════
+   DUAL-BEAM BORDER (Live Cards)
+═══════════════════════════════════ */
+.border-beam-card {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Beam 1 — primary chaser */
+.border-beam-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle, 0deg),
+    transparent 0deg,
+    var(--beam-color-start, #4CD7F6) 50deg,
+    var(--beam-color-end, #635BFF) 100deg,
+    transparent 150deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam-spin 3s linear infinite;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* Beam 2 — counter chaser, offset 180deg */
+.border-beam-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle-2, 180deg),
+    transparent 0deg,
+    var(--beam-color-end, #635BFF) 50deg,
+    var(--beam-color-start, #4CD7F6) 100deg,
+    transparent 150deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam-spin-2 3s linear infinite;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+@property --beam-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --beam-angle-2 {
+  syntax: '<angle>';
+  initial-value: 180deg;
+  inherits: false;
+}
+
+@keyframes beam-spin {
+  to { --beam-angle: 360deg; }
+}
+
+@keyframes beam-spin-2 {
+  from { --beam-angle-2: 180deg; }
+  to   { --beam-angle-2: 540deg; }
+}
+
+/* Cyan beam variant (Student) */
+.border-beam-cyan {
+  --beam-color-start: #4CD7F6;
+  --beam-color-end: #635BFF;
+}
+
+/* Red/Purple beam variant (Admin Scanner) */
+.border-beam-admin {
+  --beam-color-start: #FF416C;
+  --beam-color-end: #7C3AED;
+}
+
+/* ═══════════════════════════════════
+   GLASSMORPHISM UTILITIES
+═══════════════════════════════════ */
+@utility glass {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+@utility glass-border {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@utility font-mono-telemetry {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+@utility shadow-neon {
+  box-shadow: 0px 10px 30px rgba(99, 91, 255, 0.15);
+}
+
+@media (max-width: 768px) {
+  body {
+    animation-duration: 50s;
+  }
+  .glass {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}

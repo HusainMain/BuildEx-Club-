@@ -1,0 +1,19 @@
+.glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+.glass-card-hover:hover {
+  border-color: var(--border-active);
+  background: var(--bg-glass-hover);
+}
+
+.glass-card-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
