@@ -435,7 +435,7 @@ export default function StudentDashboard() {
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) console.error('Error signing out:', error.message);
-    window.location.href = '/student/login';
+    window.location.replace('/role-selection');
   };
 
   const filteredEvents = events.filter(e => getEventStatus(e) === activeTab);
@@ -609,21 +609,6 @@ export default function StudentDashboard() {
               )}
             </motion.button>
           ))}
-          {/* Separator */}
-          <div className="w-px h-8 bg-white/10 mx-1" />
-          {/* Logout */}
-          <motion.button
-            onClick={handleLogout}
-            whileHover={{ scale: 1.15, y: -3 }}
-            whileTap={{ scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors"
-            style={{ color: 'rgba(156,163,175,0.5)' }}
-            title="Sign Out"
-          >
-            <LogOut size={20} />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Exit</span>
-          </motion.button>
         </div>
       </div>
     </div>

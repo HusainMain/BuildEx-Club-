@@ -8,8 +8,20 @@ import { motion } from 'framer-motion';
 export function AuroraOrbs() {
   return (
     <>
-      <div className="aurora-orb-cyan" aria-hidden="true" />
-      <div className="aurora-orb-violet" aria-hidden="true" />
+      <motion.div 
+        className="aurora-orb-cyan" 
+        aria-hidden="true" 
+        whileInView={{ scale: 1.2 }}
+        whileTap={{ scale: 1.4, filter: 'brightness(1.5)' }}
+        viewport={{ once: false, amount: 0.1 }}
+      />
+      <motion.div 
+        className="aurora-orb-violet" 
+        aria-hidden="true" 
+        whileInView={{ scale: 1.2 }}
+        whileTap={{ scale: 1.4, filter: 'brightness(1.5)' }}
+        viewport={{ once: false, amount: 0.1 }}
+      />
     </>
   );
 }

@@ -598,17 +598,15 @@ const StaffModal = ({ onClose, session, admins, refreshAdmins }) => {
                   <span className="font-bold text-white">{adm.full_name || 'Unnamed Admin'}</span>
                   <div className="flex items-center gap-3">
                     <span className="text-xs bg-[var(--color-primary)]/20 text-[var(--color-primary)] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{adm.role}</span>
-                    {isMasterAdmin && adm.email !== 'admin.husain@buildex.com' && (
-                      <button onClick={() => handleDeleteAdmin(adm.id)} className="text-gray-500 hover:text-red-500 transition-colors p-1" title="Revoke Admin Access">
-                        <Trash2 size={16} />
-                      </button>
-                    )}
                   </div>
                 </div>
                 <span className="text-sm text-gray-400">{adm.email}</span>
               </div>
             ))}
           </div>
+          <p className="text-[10px] text-gray-500 mt-6 text-center border-t border-white/5 pt-4">
+             Note: For security, staff deprovisioning must be authorized through the Supabase Management Console.
+          </p>
         </div>
 
         {/* Right Side: Create Admin Form */}
@@ -825,7 +823,7 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) console.error('Error signing out:', error.message);
-    window.location.href = '/admin/login';
+    window.location.replace('/role-selection');
   };
 
   return (

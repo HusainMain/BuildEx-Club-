@@ -3,7 +3,7 @@ import { AuroraOrbs, PerspectiveGrid } from '../components/VengeanceUI';
 
 export default function Landing() {
   return (
-    <div className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center">
+    <div className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-purple-900/10 via-black to-black">
       <PerspectiveGrid />
       <AuroraOrbs />
       
