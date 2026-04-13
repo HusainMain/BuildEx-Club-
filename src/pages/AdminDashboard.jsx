@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { Scan, LogOut, X, Plus, Clock, MapPin, User, Calendar, Trash2, Search, Flashlight } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { Scan, LogOut, X, Plus, Clock, MapPin, User, Calendar, Trash2, Search, Flashlight, SwitchCamera } from 'lucide-react';
 import { motion, useMotionValue, useMotionTemplate, AnimatePresence } from 'framer-motion';
 import { PerspectiveGrid, MagneticWrapper, BorderBeamCard, AuroraOrbs } from '../components/VengeanceUI';
 
@@ -681,6 +681,7 @@ export default function AdminDashboard() {
   const [allEventsRegs, setAllEventsRegs] = useState({}); // eventId -> { registered, checkedIn }
   
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [facingMode, setFacingMode] = useState('environment');
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [pulse, setPulse] = useState(false);
@@ -803,17 +804,30 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    let scanner = null, timer = null;
+    let ht5Qrcode = null;
+    let timer = null;
     if (scannerOpen) {
       timer = setTimeout(() => {
         try {
-          scanner = new Html5QrcodeScanner('reader', { qrbox: { width: 250, height: 250 }, fps: 5 }, false);
-          scanner.render(text => handleScanSuccess(text, scanner), () => { });
-        } catch (e) { showToast('Camera Error: ' + e.message, true); }
+          ht5Qrcode = new Html5Qrcode('reader');
+          const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+          ht5Qrcode.start({ facingMode }, config, text => {
+            handleScanSuccess(text, ht5Qrcode);
+          }, () => {}).catch(err => {
+            showToast('Camera Error: ' + err.message, true);
+          });
+        } catch (e) { showToast('Camera Initialization Error: ' + e.message, true); }
       }, 150);
     }
-    return () => { if (timer) clearTimeout(timer); if (scanner) scanner.clear().catch(() => { }); };
-  }, [scannerOpen]);
+    return () => { 
+      if (timer) clearTimeout(timer); 
+      if (ht5Qrcode) {
+        try {
+          ht5Qrcode.stop().then(() => ht5Qrcode.clear()).catch(() => {});
+        } catch (e) {}
+      }
+    };
+  }, [scannerOpen, facingMode]);
 
   const showToast = (msg, isError = false) => {
     setToastMessage({ text: msg, isError });
@@ -846,10 +860,20 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
-        <motion.button whileTap={{ scale: 0.92, transition: { type: 'spring', stiffness: 400, damping: 10 } }} onClick={handleLogout} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-          <LogOut size={18} /> Sign Out
-        </motion.button>
       </header>
+
+      {/* Navigation Sidebar */}
+      <div className="fixed left-0 top-0 bottom-0 w-16 md:w-20 border-r border-white/5 flex flex-col justify-end items-center pb-8 z-40 bg-[var(--color-surface-base)]/50 backdrop-blur-md">
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={handleLogout}
+          className="flex flex-col items-center gap-1 text-gray-500 hover:text-red-500 transition-colors bg-white/5 p-3 rounded-2xl"
+          title="Logout"
+        >
+          <LogOut size={20} />
+          <span className="text-[9px] uppercase font-bold tracking-widest hidden md:block">Logout</span>
+        </motion.button>
+      </div>
 
       {/* Stat Cards */}
       {/* Power Summary Strip */}
@@ -1047,6 +1071,13 @@ export default function AdminDashboard() {
                 <h2 className="text-lg font-bold">Scanning Protocol</h2>
                 <div className="flex items-center gap-3">
                   <button 
+                    onClick={() => setFacingMode(prev => prev === 'environment' ? 'user' : 'environment')} 
+                    className="p-2 rounded-full glass glass-border shadow-neon transition-colors text-[var(--color-cyan)] hover:text-white"
+                    title="Flip Camera"
+                  >
+                    <SwitchCamera size={18} />
+                  </button>
+                  <button 
                     onClick={() => toggleTorch(!torchOn)} 
                     className={`p-2 rounded-full glass glass-border shadow-neon transition-colors ${torchOn ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-cyan)] hover:text-white'}`}
                   >
@@ -1059,7 +1090,7 @@ export default function AdminDashboard() {
               <div className="w-full p-6 border-t border-white/5 bg-[var(--color-surface-base)]">
                 <h3 className="text-sm font-semibold text-[var(--color-primary)] mb-2">Manual Override</h3>
                 <p className="text-xs text-gray-400 mb-3">Input the student payload JSON manually.</p>
-                <textarea id="manual-payload" className="w-full bg-[var(--color-surface-highest)] border border-gray-700 rounded-lg p-3 text-sm focus:border-[var(--color-primary)] focus:outline-none min-h-[80px]" placeholder='{"user_id": "...", "event_id": "..."}' />
+                <textarea id="manual-payload" className="w-full bg-zinc-900/90 border border-purple-500/30 rounded-lg p-3 text-sm font-mono text-white focus:border-[var(--color-primary)] focus:outline-none min-h-[80px]" placeholder='{"user_id": "...", "event_id": "..."}' />
                 <button onClick={() => { const v = document.getElementById('manual-payload').value; if (v) handleScanSuccess(v, null); }} className="w-full mt-3 bg-gray-800 hover:bg-gray-700 py-2 rounded shadow-neon transition-colors font-medium text-sm border border-gray-700">
                   Submit Manual Payload
                 </button>
