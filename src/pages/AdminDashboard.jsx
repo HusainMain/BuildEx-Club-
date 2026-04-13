@@ -97,7 +97,7 @@ const LiquidProgress = ({ step }) => {
 const ScheduleModal = ({ onClose, onCreated }) => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ title: '', speaker_name: '', location: '', description: '', start_time: '', duration: 90 });
+  const [form, setForm] = useState({ title: '', speaker_name: '', location: '', description: '', start_time: '', duration: 90, capacity: '' });
   const [errors, setErrors] = useState({});
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
@@ -161,6 +161,7 @@ const ScheduleModal = ({ onClose, onCreated }) => {
       start_time: startDate.toISOString(),
       event_date: startDate.toISOString(), // keep legacy col in sync
       duration: Number(form.duration),
+      max_capacity: form.capacity ? Number(form.capacity) : null,
       status: startDate <= new Date() && new Date() <= endDate ? 'live' : startDate > new Date() ? 'upcoming' : 'past',
     }]);
 
@@ -234,6 +235,10 @@ const ScheduleModal = ({ onClose, onCreated }) => {
                 <div>
                   <label className={labelCls}>Description <span className="normal-case text-gray-600">(optional)</span></label>
                   <textarea className={`${inputCls} resize-none`} style={inputStyle('description')} rows={3} placeholder="Brief event overview…" value={form.description} onChange={e => set('description', e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>Student Capacity <span className="normal-case text-gray-600">(optional — leave blank for unlimited)</span></label>
+                  <input type="number" min="1" className={inputCls} style={{ ...inputStyle('capacity'), fontFamily: 'JetBrains Mono, monospace' }} placeholder="e.g. 100" value={form.capacity} onChange={e => set('capacity', e.target.value)} />
                 </div>
                 <motion.button
                   onClick={nextStep}
@@ -426,11 +431,27 @@ const EventIntelligenceModal = ({ event, onClose }) => {
     }
   };
 
-  const attendedCount = registrations.filter(r => r.attended).length;
-  const filteredRegs = registrations.filter(r => 
-    (r.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (r.enrollment_no || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const [regFilter, setRegFilter] = useState('all'); // 'all' | 'waiting' | 'admitted'
+  const attendedCount = registrations.filter(r => r.attended || r.status === 'admitted').length;
+  const waitingCount = registrations.filter(r => r.status === 'waiting').length;
+  const filteredRegs = registrations.filter(r => {
+    const matchSearch = (r.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.enrollment_no || '').toLowerCase().includes(search.toLowerCase());
+    if (regFilter === 'waiting') return matchSearch && r.status === 'waiting';
+    if (regFilter === 'admitted') return matchSearch && (r.attended || r.status === 'admitted');
+    return matchSearch;
+  });
+
+  const clearForEntry = async (reg) => {
+    setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, status: 'admitted', attended: true, attended_at: new Date().toISOString() } : r));
+    const { error } = await supabase.from('registrations').update({ status: 'admitted', attended: true, attended_at: new Date().toISOString() }).eq('id', reg.id);
+    if (error) {
+      setRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, status: reg.status, attended: reg.attended } : r));
+      document.dispatchEvent(new CustomEvent('toastTrigger', { detail: { msg: 'Error: ' + error.message, isError: true } }));
+    } else {
+      document.dispatchEvent(new CustomEvent('toastTrigger', { detail: { msg: 'Entry Protocol Authorized!', isError: false } }));
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -442,10 +463,25 @@ const EventIntelligenceModal = ({ event, onClose }) => {
       >
         <div className="p-6 border-b border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[var(--color-surface-elevated)] sticky top-0 z-10">
           <div>
-            <h2 className="text-xl font-bold flex items-center gap-2"><Scan size={20} style={{ color: 'var(--color-cyan)' }}/> {event.title}</h2>
-            <div className="flex gap-4 mt-2">
-              <span className="text-sm text-gray-400">Registered: <strong className="text-white">{registrations.length}</strong></span>
+            <h2 className="text-xl font-bold flex items-center gap-2"><Scan size={20} style={{ color: 'var(--color-cyan)'}}/> {event.title}</h2>
+            <div className="flex gap-4 mt-2 flex-wrap">
+              <span className="text-sm text-gray-400">Registered: <strong className="text-white">{registrations.filter(r=>r.status!=='waiting').length}</strong></span>
               <span className="text-sm text-[var(--color-cyan)]">Attended: <strong className="text-white">{attendedCount}</strong></span>
+              {waitingCount > 0 && <span className="text-sm text-amber-400">⏳ Waiting: <strong className="text-white">{waitingCount}</strong></span>}
+              {event.max_capacity && <span className="text-sm text-gray-500">Capacity: <strong className="text-white">{event.max_capacity}</strong></span>}
+            </div>
+            {/* Filter tabs */}
+            <div className="flex gap-2 mt-3">
+              {[['all','All'],['waiting','Waitlist'],['admitted','Admitted']].map(([val,label])=>(
+                <button key={val} onClick={()=>setRegFilter(val)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
+                    regFilter===val
+                      ? val==='waiting' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                        : 'bg-[var(--color-primary)]/20 text-[var(--color-primary)] border border-[var(--color-primary)]/40'
+                      : 'bg-white/5 text-gray-500 border border-white/10 hover:text-white'
+                  }`}>{label}{val==='waiting'&&waitingCount>0?` (${waitingCount})`:''}
+                </button>
+              ))}
             </div>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
@@ -481,17 +517,24 @@ const EventIntelligenceModal = ({ event, onClose }) => {
                 {filteredRegs.map(reg => (
                   <tr key={reg.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-3">
-                      <button 
-                        onClick={() => toggleAttendance(reg)}
-                        className={`w-11 h-6 rounded-full relative transition-colors ${reg.attended ? 'bg-[var(--color-cyan)]' : 'bg-gray-700'}`}
-                      >
-                        <motion.div 
-                          layout
-                          className="w-4 h-4 bg-white rounded-full absolute top-1"
-                          style={{ left: reg.attended ? 'calc(100% - 20px)' : '4px' }}
-                          transition={{ type: "spring", stiffness: 700, damping: 30 }}
-                        />
-                      </button>
+                      {reg.status === 'waiting' ? (
+                        <button
+                          onClick={() => clearForEntry(reg)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+                        >⚡ Clear</button>
+                      ) : (
+                        <button 
+                          onClick={() => toggleAttendance(reg)}
+                          className={`w-11 h-6 rounded-full relative transition-colors ${(reg.attended || reg.status==='admitted') ? 'bg-[var(--color-cyan)]' : 'bg-gray-700'}`}
+                        >
+                          <motion.div 
+                            layout
+                            className="w-4 h-4 bg-white rounded-full absolute top-1"
+                            style={{ left: (reg.attended || reg.status==='admitted') ? 'calc(100% - 20px)' : '4px' }}
+                            transition={{ type: "spring", stiffness: 700, damping: 30 }}
+                          />
+                        </button>
+                      )}
                     </td>
                     <td className="px-6 py-3 font-semibold text-white">{reg.full_name || reg.profiles?.full_name || 'N/A'}</td>
                     <td className="px-6 py-3 text-gray-400">{reg.enrollment_no || reg.profiles?.enrollment_no || 'N/A'}</td>

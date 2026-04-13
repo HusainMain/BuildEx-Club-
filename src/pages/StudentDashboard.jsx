@@ -191,6 +191,17 @@ const RegistrationModal = ({ payload, userId, onClose, onRegistered }) => {
       setLoading(true);
       const uniqueToken = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
 
+      // Check capacity before inserting
+      let regStatus = 'registered';
+      if (event.max_capacity) {
+        const { count } = await supabase
+          .from('registrations')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_id', event.id)
+          .neq('status', 'waiting');
+        if (count >= event.max_capacity) regStatus = 'waiting';
+      }
+
       const { error } = await supabase
         .from('registrations')
         .insert([{
@@ -200,7 +211,8 @@ const RegistrationModal = ({ payload, userId, onClose, onRegistered }) => {
           department: details.department,
           year: details.year,
           enrollment_no: details.enrollmentNo.trim(),
-          qr_token: uniqueToken
+          qr_token: uniqueToken,
+          status: regStatus
         }]);
 
       setLoading(false);
@@ -223,7 +235,8 @@ const RegistrationModal = ({ payload, userId, onClose, onRegistered }) => {
           enrollment_no: details.enrollmentNo,
           full_name: details.fullName,
           department: details.department,
-          year: details.year
+          year: details.year,
+          status: regStatus
         });
       }
     }
@@ -398,6 +411,7 @@ export default function StudentDashboard() {
   };
 
   const isRegistered = (eventId) => registrations.some(r => String(r.event_id) === String(eventId));
+  const getRegStatus = (eventId) => registrations.find(r => String(r.event_id) === String(eventId))?.status || null;
 
   const showQrPass = (eventId) => {
     const reg = registrations.find(r => String(r.event_id) === String(eventId));
@@ -493,29 +507,42 @@ export default function StudentDashboard() {
               </div>
 
               {/* ── Register / Get Pass Button ── */}
-              {(eventStatus === 'upcoming' || eventStatus === 'live') && (
-                <div className="flex flex-col gap-2">
-                  {userRegistrations.includes(String(event.id)) && (
-                    <div className="flex items-center gap-2 justify-center text-[var(--color-cyan)] font-medium mb-2">
-                      <CheckCircle2 size={18} /> Verified Registered
-                    </div>
-                  )}
-                  <MagneticWrapper strength={12} className="w-full">
-                    <motion.button
-                      onClick={() => handleRegisterClick(event)}
-                      whileTap={{ scale: 0.97, transition: { type: 'spring', stiffness: 400, damping: 14 } }}
-                      className={`w-full py-3 rounded-lg font-bold transition-all ${
-                        userRegistrations.includes(String(event.id))
-                          ? 'bg-[var(--color-primary)] text-white shadow-[0_0_20px_rgba(99,91,255,0.35)] hover:bg-[var(--color-primary-hover)]'
-                          : 'bg-[var(--color-surface-highest)] border border-white/10 text-white hover:bg-white/10'
-                      }`}
-                      style={{ willChange: 'transform' }}
-                    >
-                      {userRegistrations.includes(String(event.id)) ? 'Show Entry Pass' : 'Register Now'}
-                    </motion.button>
-                  </MagneticWrapper>
-                </div>
-              )}
+              {(eventStatus === 'upcoming' || eventStatus === 'live') && (() => {
+                const regStatus = getRegStatus(event.id);
+                const isWaiting = regStatus === 'waiting';
+                const isAdmitted = regStatus === 'admitted' || regStatus === 'registered';
+                return (
+                  <div className="flex flex-col gap-2">
+                    {isAdmitted && (
+                      <div className="flex items-center gap-2 justify-center text-[var(--color-cyan)] font-medium mb-2">
+                        <CheckCircle2 size={18} /> Verified Registered
+                      </div>
+                    )}
+                    {isWaiting && (
+                      <div className="flex items-center gap-2 justify-center text-amber-400 font-medium mb-2">
+                        <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" /></span>
+                        On Waiting List
+                      </div>
+                    )}
+                    <MagneticWrapper strength={12} className="w-full">
+                      <motion.button
+                        onClick={() => handleRegisterClick(event)}
+                        whileTap={{ scale: 0.97, transition: { type: 'spring', stiffness: 400, damping: 14 } }}
+                        className={`w-full py-3 rounded-lg font-bold transition-all ${
+                          isAdmitted
+                            ? 'bg-[var(--color-primary)] text-white shadow-[0_0_20px_rgba(99,91,255,0.35)] hover:bg-[var(--color-primary-hover)]'
+                            : isWaiting
+                            ? 'bg-amber-500/10 border border-amber-500/50 text-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.2)] hover:bg-amber-500/20'
+                            : 'bg-[var(--color-surface-highest)] border border-white/10 text-white hover:bg-white/10'
+                        }`}
+                        style={{ willChange: 'transform' }}
+                      >
+                        {isAdmitted ? 'Show Entry Pass' : isWaiting ? '⏳ Join Waiting List' : 'Register Now'}
+                      </motion.button>
+                    </MagneticWrapper>
+                  </div>
+                );
+              })()}
 
               {eventStatus === 'past' && registered && (
                 <button
