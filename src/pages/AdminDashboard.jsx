@@ -810,6 +810,7 @@ export default function AdminDashboard() {
       timer = setTimeout(() => {
         try {
           ht5Qrcode = new Html5Qrcode('reader');
+          window.html5QrCode = ht5Qrcode;
           const config = { fps: 10, qrbox: { width: 250, height: 250 } };
           ht5Qrcode.start({ facingMode }, config, text => {
             handleScanSuccess(text, ht5Qrcode);
@@ -860,20 +861,15 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
-      </header>
-
-      {/* Navigation Sidebar */}
-      <div className="fixed left-0 top-0 bottom-0 w-16 md:w-20 border-r border-white/5 flex flex-col justify-end items-center pb-8 z-40 bg-[var(--color-surface-base)]/50 backdrop-blur-md">
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={handleLogout}
-          className="flex flex-col items-center gap-1 text-gray-500 hover:text-red-500 transition-colors bg-white/5 p-3 rounded-2xl"
-          title="Logout"
+        <motion.button 
+          whileTap={{ scale: 0.92, transition: { type: 'spring', stiffness: 400, damping: 10 } }} 
+          onClick={handleLogout} 
+          className="border border-white/10 bg-white/5 p-2 rounded-full text-gray-400 hover:text-white transition-colors"
+          title="Sign Out"
         >
-          <LogOut size={20} />
-          <span className="text-[9px] uppercase font-bold tracking-widest hidden md:block">Logout</span>
+          <LogOut size={18} />
         </motion.button>
-      </div>
+      </header>
 
       {/* Stat Cards */}
       {/* Power Summary Strip */}
@@ -1086,11 +1082,19 @@ export default function AdminDashboard() {
                   <button onClick={() => setScannerOpen(false)} className="text-gray-400 hover:text-white p-1"><X size={20} /></button>
                 </div>
               </div>
-              <div className="w-full p-4 bg-white text-black min-h-[300px]"><div id="reader" width="100%"></div></div>
-              <div className="w-full p-6 border-t border-white/5 bg-[var(--color-surface-base)]">
+              <div className="w-full p-4 bg-white text-black min-h-[300px] relative overflow-hidden">
+                <div id="reader" width="100%"></div>
+                <motion.div 
+                  initial={{ top: '0%' }}
+                  animate={{ top: '100%' }}
+                  transition={{ duration: 2.5, ease: 'linear', repeat: Infinity, repeatType: 'reverse' }}
+                  className="absolute left-0 w-full h-[2px] bg-[var(--color-primary)] shadow-[0_0_15px_var(--color-primary)] z-10 pointer-events-none"
+                />
+              </div>
+              <div className="w-full bg-[#050505] border-t border-purple-500/50 p-6">
                 <h3 className="text-sm font-semibold text-[var(--color-primary)] mb-2">Manual Override</h3>
                 <p className="text-xs text-gray-400 mb-3">Input the student payload JSON manually.</p>
-                <textarea id="manual-payload" className="w-full bg-zinc-900/90 border border-purple-500/30 rounded-lg p-3 text-sm font-mono text-white focus:border-[var(--color-primary)] focus:outline-none min-h-[80px]" placeholder='{"user_id": "...", "event_id": "..."}' />
+                <textarea id="manual-payload" className="w-full bg-zinc-900/90 border border-purple-500/30 rounded-lg p-3 text-sm font-black tracking-widest text-white focus:border-[var(--color-primary)] focus:outline-none min-h-[80px]" placeholder='{"user_id": "...", "event_id": "..."}' />
                 <button onClick={() => { const v = document.getElementById('manual-payload').value; if (v) handleScanSuccess(v, null); }} className="w-full mt-3 bg-gray-800 hover:bg-gray-700 py-2 rounded shadow-neon transition-colors font-medium text-sm border border-gray-700">
                   Submit Manual Payload
                 </button>
