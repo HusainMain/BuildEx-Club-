@@ -844,7 +844,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen p-4 md:p-8 bg-transparent relative">
       <PerspectiveGrid />
-      <AuroraOrbs />
+      <AuroraOrbs scannerActive={scannerOpen} />
       {/* Scan Wave */}
       <AnimatePresence>{showScanWave && <ScanWave onDone={() => setShowScanWave(false)} />}</AnimatePresence>
 
@@ -871,23 +871,40 @@ export default function AdminDashboard() {
         </motion.button>
       </header>
 
-      {/* Stat Cards */}
-      {/* Power Summary Strip */}
+      {/* Bento Stats Grid */}
       <div className="max-w-6xl mx-auto mb-10 relative z-10">
-        <div className="glass glass-border rounded-2xl p-6 flex flex-wrap justify-around items-center gap-6 shadow-neon">
-          <div className="text-center">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Events</p>
-            <p className="text-3xl font-black text-white font-mono-telemetry">{stats.total_events}</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {/* Large Card — Total Events */}
+          <div className="col-span-2 md:col-span-1 relative overflow-hidden rounded-2xl border border-white/5 backdrop-blur-xl p-6 flex flex-col justify-between" style={{ background: 'rgba(99,91,255,0.08)', minHeight: '140px' }}>
+            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full" style={{ background: 'radial-gradient(circle, rgba(99,91,255,0.25) 0%, transparent 70%)' }} />
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Total Events</p>
+            <p className="text-5xl font-black font-mono-telemetry text-white mt-2"><RollingNumber value={stats.total_events} /></p>
+            <div className="flex items-center gap-1.5 mt-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]" />
+              <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">All time</span>
+            </div>
           </div>
-          <div className="w-px h-10 bg-white/10 hidden md:block" />
-          <div className="text-center">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Registrations</p>
-            <p className="text-3xl font-black text-[var(--color-primary)] font-mono-telemetry">{stats.total_registrations}</p>
+
+          {/* Medium Card — Registrations */}
+          <div className="relative overflow-hidden rounded-2xl border border-white/5 backdrop-blur-xl p-6 flex flex-col justify-between" style={{ background: 'rgba(76,215,246,0.06)', minHeight: '140px' }}>
+            <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full" style={{ background: 'radial-gradient(circle, rgba(76,215,246,0.2) 0%, transparent 70%)' }} />
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Registrations</p>
+            <p className="text-4xl font-black font-mono-telemetry text-[var(--color-primary)] mt-2"><RollingNumber value={stats.total_registrations} /></p>
+            <div className="flex items-center gap-1.5 mt-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cyan)]" />
+              <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Lifetime</span>
+            </div>
           </div>
-          <div className="w-px h-10 bg-white/10 hidden md:block" />
-          <div className="text-center">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Scans Today</p>
-            <p className="text-3xl font-black text-[var(--color-cyan)] font-mono-telemetry">{stats.scans_today}</p>
+
+          {/* Small Hero Card — Scans Today */}
+          <div className="relative overflow-hidden rounded-2xl border border-white/5 backdrop-blur-xl p-6 flex flex-col justify-between" style={{ background: 'rgba(124,58,237,0.07)', minHeight: '140px' }}>
+            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.3) 0%, transparent 70%)' }} />
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Scans Today</p>
+            <p className="text-4xl font-black font-mono-telemetry text-[var(--color-cyan)] mt-2"><RollingNumber value={stats.scans_today} /></p>
+            <div className="flex items-center gap-1.5 mt-3">
+              <span className="flex h-1.5 w-1.5 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" /></span>
+              <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Live</span>
+            </div>
           </div>
         </div>
       </div>

@@ -5,22 +5,30 @@ import { motion } from 'framer-motion';
    AURORA ORBS
    Fixed ambient glow orbs — Cyan (top-left) + Violet (bottom-right)
 ╚══════════════════════════════════════════════════════ */
-export function AuroraOrbs() {
+export function AuroraOrbs({ scannerActive = false }) {
+  const cyanTarget = scannerActive
+    ? { scale: 1.4, background: 'radial-gradient(circle, rgba(99,91,255,0.35) 0%, rgba(124,58,237,0.15) 50%, transparent 70%)' }
+    : { scale: 1.2 };
+  const violetTarget = scannerActive
+    ? { scale: 1.5, background: 'radial-gradient(circle, rgba(124,58,237,0.4) 0%, rgba(99,91,255,0.18) 50%, transparent 70%)' }
+    : { scale: 1.2 };
+  const scannerTransition = { duration: 1.8, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' };
+
   return (
     <>
       <motion.div 
         className="aurora-orb-cyan" 
         aria-hidden="true" 
-        whileInView={{ scale: 1.2 }}
+        animate={cyanTarget}
+        transition={scannerActive ? scannerTransition : { duration: 0.6 }}
         whileTap={{ scale: 1.4, filter: 'brightness(1.5)' }}
-        viewport={{ once: false, amount: 0.1 }}
       />
       <motion.div 
         className="aurora-orb-violet" 
         aria-hidden="true" 
-        whileInView={{ scale: 1.2 }}
+        animate={violetTarget}
+        transition={scannerActive ? { ...scannerTransition, duration: 2.2 } : { duration: 0.6 }}
         whileTap={{ scale: 1.4, filter: 'brightness(1.5)' }}
-        viewport={{ once: false, amount: 0.1 }}
       />
     </>
   );
