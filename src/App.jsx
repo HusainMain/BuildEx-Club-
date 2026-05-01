@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Landing from "./pages/Landing";
+import ShowroomLanding from "./pages/ShowroomLanding";
+import PortalEntry from "./pages/PortalEntry";
 import StudentLogin from "./pages/StudentLogin";
 import AdminLogin from "./pages/AdminLogin";
 import StudentDashboard from "./pages/StudentDashboard";
@@ -51,7 +52,7 @@ function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (_event === "SIGNED_OUT") {
-        window.location.replace("/role-selection");
+        window.location.replace("/");
       }
     });
 
@@ -65,13 +66,15 @@ function App() {
       {!loading && (
         <Routes>
           {/* Unauthenticated Routes */}
-          <Route path="/" element={<Navigate to="/role-selection" replace />} />
+          <Route path="/" element={<ShowroomLanding />} />
           <Route
-            path="/role-selection"
+            path="/portal"
             element={
-              !session ? <Landing /> : <Navigate to="/student/dashboard" />
+              !session ? <PortalEntry /> : <Navigate to="/student/dashboard" />
             }
           />
+          {/* Legacy redirect for any bookmarked /role-selection links */}
+          <Route path="/role-selection" element={<Navigate to="/portal" replace />} />
           <Route
             path="/student/login"
             element={

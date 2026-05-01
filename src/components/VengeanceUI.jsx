@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 /* ═══════════════════════════════════════════════════════╗
@@ -89,6 +89,48 @@ export function BorderBeamCard({ children, variant = 'cyan', className = '' }) {
   return (
     <div className={`border-beam-card border-beam-${variant} ${className}`}>
       {children}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════╗
+   STAR FIELD
+   Pure-CSS animated star particles for the Showroom
+   space-drop parallax environment
+╚══════════════════════════════════════════════════════ */
+export function StarField({ count = 120 }) {
+  const [stars, setStars] = useState([]);
+
+  useEffect(() => {
+    const generated = Array.from({ length: count }, (_, i) => ({
+      id: i,
+      top: Math.random() * 100,
+      left: Math.random() * 100,
+      size: Math.random() * 2.5 + 0.5,
+      opacity: Math.random() * 0.5 + 0.15,
+      duration: Math.random() * 8 + 5,
+      delay: -(Math.random() * 10),
+    }));
+    setStars(generated);
+  }, [count]);
+
+  return (
+    <div className="star-field" aria-hidden="true">
+      {stars.map(s => (
+        <span
+          key={s.id}
+          className="star-particle"
+          style={{
+            top: `${s.top}%`,
+            left: `${s.left}%`,
+            width: `${s.size}px`,
+            height: `${s.size}px`,
+            opacity: s.opacity,
+            animationDuration: `${s.duration}s`,
+            animationDelay: `${s.delay}s`,
+          }}
+        />
+      ))}
     </div>
   );
 }
