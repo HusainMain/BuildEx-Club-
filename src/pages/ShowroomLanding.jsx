@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AuroraOrbs, PerspectiveGrid, StarField } from '../components/VengeanceUI';
 import './ShowroomLanding.css';
 
@@ -12,6 +13,7 @@ const PILLARS = [
     title: 'Beyond the Textbook',
     desc: 'Shifting campus culture away from passive classroom theory and diving directly into aggressive, real-world execution.',
     accent: '#4CD7F6',
+    offset: 0,
   },
   {
     id: 'innovation',
@@ -19,6 +21,7 @@ const PILLARS = [
     title: 'Startup & Business Innovation',
     desc: 'Operating as a launchpad and incubator for student entrepreneurship, networking, and strategic business collaboration.',
     accent: '#635BFF',
+    offset: 28, // staggered vertical offset (px) on desktop
   },
   {
     id: 'mentorship',
@@ -26,71 +29,17 @@ const PILLARS = [
     title: 'Elite Guidance & Mentorship',
     desc: 'Providing the exact technical blueprints, industry mindsets, and leadership skills required to scale solo ideas into powerful business engines.',
     accent: '#A855F7',
+    offset: 56,
   },
 ];
 
-/* ─── Video duration helper (ms) ────────────────────────
-   We listen to the video's "ended" event so the wait time
-   is always the actual video length, not a hard-coded value.
-   As a safety net the 2 s fallback fires if metadata fails.
-─────────────────────────────────────────────────────────── */
-const FALLBACK_WAIT_MS = 2000; // 2 s fallback
-
-export default function ShowroomLanding() {
-  // 'pending' → 'playing' → 'fading' → 'finished'
-  const [introState, setIntroState] = useState('pending');
-  const videoRef = useRef(null);
-  const fallbackRef = useRef(null);
-
-  useEffect(() => {
-    const hasPlayed = sessionStorage.getItem('hasPlayedCinematicIntro');
-
-    if (hasPlayed) {
-      setIntroState('finished');
-      return;
-    }
-
-    // Mark as played immediately so navigation doesn't re-trigger
-    sessionStorage.setItem('hasPlayedCinematicIntro', 'true');
-    setIntroState('playing');
-
-    const startFade = () => {
-      if (fallbackRef.current) clearTimeout(fallbackRef.current);
-      setIntroState('fading');
-      setTimeout(() => setIntroState('finished'), 800); // matches CSS transition
-    };
-
-    // Primary: fire when video naturally ends
-    const vid = videoRef.current;
-    if (vid) {
-      vid.addEventListener('ended', startFade, { once: true });
-      // Fallback: if the video loops / never fires "ended", use metadata length
-      vid.addEventListener('loadedmetadata', () => {
-        const durationMs = vid.duration * 1000 || FALLBACK_WAIT_MS;
-        fallbackRef.current = setTimeout(startFade, durationMs + 200);
-      }, { once: true });
-      // Second fallback: if metadata never loads
-      fallbackRef.current = setTimeout(startFade, FALLBACK_WAIT_MS + 5000);
-    }
-
-    return () => {
-      if (vid) vid.removeEventListener('ended', startFade);
-      if (fallbackRef.current) clearTimeout(fallbackRef.current);
-    };
-  }, []);
-
-  const introActive = introState === 'playing' || introState === 'fading';
-  const contentReady = introState === 'finished' || introState === 'fading';
-
+/* ─── Ambient layers rendered unconditionally ─────────── */
+function AmbientCanvas() {
   return (
-    <div className="showroom-wrapper">
-
-      {/* ── Always-present ambient depth layers ── */}
+    <>
       <PerspectiveGrid />
       <AuroraOrbs />
       <StarField count={130} />
-
-      {/* SVG Grain filter ── keeps texture consistent with the rest of the site */}
       <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
         <defs>
           <filter id="sl-grain">
@@ -99,130 +48,258 @@ export default function ShowroomLanding() {
           </filter>
         </defs>
       </svg>
+    </>
+  );
+}
 
-      {/* ════════════════════════════════════════════
-          PHASE 1 — CINEMATIC INTRO OVERLAY
-      ════════════════════════════════════════════ */}
-      <div className={`intro-overlay ${introActive ? 'is-active' : ''} ${introState === 'fading' ? 'is-fading' : ''}`} aria-hidden="true" />
+/* ─── Phase machine ───────────────────────────────────── *
+ *  'intro'   → Only video rendered. Main site = null.     *
+ *  'fading'  → Video fading out. Main site still null.    *
+ *  'site'    → Video gone. Main site fully mounted.       *
+ * ──────────────────────────────────────────────────────── */
+export default function ShowroomLanding() {
+  const alreadyPlayed = typeof window !== 'undefined'
+    ? sessionStorage.getItem('hasPlayedCinematicIntro') === 'true'
+    : false;
 
-      {/* Centered video container — fades OUT in place */}
-      <div className={`intro-video-wrap ${introActive ? 'is-visible' : ''} ${introState === 'fading' ? 'is-fading' : ''}`}>
-        <video
-          ref={videoRef}
-          className="intro-video"
-          src="/Untitled - June 04, 2026 at 00.15.43.mp4"
-          autoPlay
-          muted
-          playsInline
-          /* Remove "loop" so the "ended" event fires naturally */
-        />
-      </div>
+  const [phase, setPhase] = useState(alreadyPlayed ? 'site' : 'intro');
+  const videoRef = useRef(null);
+  const safeRef  = useRef(null);
 
-      {/* ════════════════════════════════════════════
-          PHASE 2 & 3 — MAIN CONTENT
-      ════════════════════════════════════════════ */}
-      <div className={`showroom-content ${contentReady ? 'is-revealed' : ''}`}>
+  useEffect(() => {
+    if (phase !== 'intro') return;
 
-        {/* ── Header ── */}
-        <header className="sl-header" id="top">
-          <div className="sl-logo" aria-label="BuildEx">
-            &lt;BU/LD.EX/&gt;
-          </div>
-          <nav className="sl-nav" aria-label="Primary navigation">
-            <a href="#top" className="sl-nav-link">Home</a>
-            <a href="#about" className="sl-nav-link">About</a>
-          </nav>
-        </header>
+    const triggerFade = () => {
+      if (safeRef.current) clearTimeout(safeRef.current);
+      setPhase('fading');
+      setTimeout(() => {
+        setPhase('site');
+        sessionStorage.setItem('hasPlayedCinematicIntro', 'true');
+      }, 900); // matches CSS fade duration
+    };
 
-        <main>
+    const vid = videoRef.current;
+    if (!vid) return;
 
-          {/* ════════════════════════════
-              HERO SECTION
-          ════════════════════════════ */}
-          <section className="sl-hero" aria-labelledby="hero-heading">
+    vid.addEventListener('ended', triggerFade, { once: true });
 
-            <p className="sl-eyebrow">SVIT Vasad &nbsp;·&nbsp; Est. 2024</p>
+    // Fallback: use the actual video duration once metadata loads
+    vid.addEventListener('loadedmetadata', () => {
+      const ms = (vid.duration || 4) * 1000 + 300;
+      safeRef.current = setTimeout(triggerFade, ms);
+    }, { once: true });
 
-            <h1 className="sl-hero-title metallic-gradient" id="hero-heading">
-              Ideas Change Minds.<br className="hero-br" />
-              Execution Changes History.
-            </h1>
+    // Hard safety net (10 s max)
+    safeRef.current = setTimeout(triggerFade, 10000);
 
-            <h2 className="sl-hero-sub">
-              Welcome to the first-ever student-driven startup ecosystem at SVIT Vasad.
-            </h2>
+    return () => {
+      vid.removeEventListener('ended', triggerFade);
+      if (safeRef.current) clearTimeout(safeRef.current);
+    };
+  }, [phase]);
 
-            <p className="sl-hero-body">
-              Almost everyone has envisioned a project or an idea capable of generating a massive
-              social impact. But the real question is: <strong>Can you execute it?</strong> The reality
-              is that only a select few succeed because proper execution requires structured guidance,
-              dedicated mentorship, and a resilient entrepreneurial mindset.{' '}
-              <strong>THE BUILDEX CLUB</strong> exists to bridge that critical gap.
-            </p>
+  return (
+    <div className="sl-root">
+      <AmbientCanvas />
 
-            <div className="sl-hero-cta-row">
-              <Link to="/portal" className="sl-btn-primary" id="join-ecosystem-btn">
-                Join the Ecosystem
-                <ArrowRight size={18} className="sl-btn-arrow" />
-              </Link>
+      {/* ════════════════════════════════════════
+          PHASE 1 — INTRO: main site is NOT rendered
+      ════════════════════════════════════════ */}
+      <AnimatePresence>
+        {(phase === 'intro' || phase === 'fading') && (
+          <motion.div
+            className="sl-intro-stage"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.9, ease: [0.65, 0, 0.35, 1] }}
+            key="intro-stage"
+          >
+            {/* Heavy blur backstop */}
+            <div className="sl-intro-backdrop" />
+
+            {/* Centered video */}
+            <div className="sl-intro-video-frame">
+              <video
+                ref={videoRef}
+                className="sl-intro-video"
+                src="/Untitled - June 04, 2026 at 00.15.43.mp4"
+                autoPlay
+                muted
+                playsInline
+                // no loop — we need `ended` to fire
+              />
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            <a href="#about" className="sl-scroll-hint" aria-label="Scroll down to learn more">
-              <ChevronDown size={16} />
-              Scroll to explore
-            </a>
-          </section>
+      {/* ════════════════════════════════════════
+          PHASE 3 — SITE: only mounted after intro
+      ════════════════════════════════════════ */}
+      {phase === 'site' && (
+        <motion.div
+          className="sl-site"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {/* ── Sticky Header ── */}
+          <header className="sl-header" id="top">
+            <span className="sl-logo" aria-label="BuildEx">
+              &lt;BU/LD.EX/&gt;
+            </span>
+            <nav className="sl-nav" aria-label="Primary navigation">
+              <a href="#top"   className="sl-nav-link">Home</a>
+              <a href="#about" className="sl-nav-link">About</a>
+            </nav>
+          </header>
 
-          {/* ════════════════════════════
-              BLUEPRINT / ABOUT SECTION
-          ════════════════════════════ */}
-          <section id="about" className="sl-blueprint" aria-labelledby="blueprint-heading">
+          <main>
+            {/* ════════════════════════════════
+                HERO — ASYMMETRIC SPLIT LAYOUT
+            ════════════════════════════════ */}
+            <section className="sl-hero" aria-labelledby="hero-h1">
+              
+              {/* Grid: left editorial | right meta */}
+              <div className="hero-grid">
 
-            <div className="sl-section-label">// THE BLUEPRINT</div>
-            <h2 className="sl-section-title metallic-gradient" id="blueprint-heading">
-              Ecosystem Foundations
-            </h2>
-            <p className="sl-section-sub">
-              Every BuildEx initiative maps back to one of three strategic pillars — each designed
-              to push execution further than the classroom ever could.
-            </p>
+                {/* ── Left: Manifesto headline ── */}
+                <div className="hero-editorial">
 
-            <div className="blueprint-grid">
-              {PILLARS.map((p) => (
-                <div
-                  key={p.id}
-                  className="blueprint-card"
-                  style={{ '--accent': p.accent }}
-                >
-                  <div className="bc-inner">
-                    <span className="bc-num">{p.num}</span>
-                    <div className="bc-accent-line" />
-                    <h3 className="bc-title">{p.title}</h3>
-                    <p className="bc-desc">{p.desc}</p>
-                  </div>
-                  <div className="bc-glow" aria-hidden="true" />
+                  <p className="sl-eyebrow">
+                    <span className="eyebrow-line" />
+                    SVIT Vasad &nbsp;·&nbsp; Est. 2024
+                  </p>
+
+                  {/* Split asymmetric heading */}
+                  <h1 className="hero-manifesto" id="hero-h1" aria-label="Ideas change minds. Execution changes history.">
+                    <span className="manifesto-word hero-word--xl metallic-gradient">IDEAS</span>
+                    <span className="manifesto-bridge">CHANGE&nbsp;MINDS.</span>
+                    <span className="manifesto-word hero-word--xl hero-word--offset metallic-gradient">EXECUTION</span>
+                    <span className="manifesto-bridge hero-bridge--right">CHANGES&nbsp;HISTORY.</span>
+                  </h1>
                 </div>
-              ))}
-            </div>
 
-            {/* Core Mantra blockquote */}
-            <blockquote className="sl-mantra">
-              <div className="mantra-marks">"</div>
-              <p>This isn&rsquo;t about learning business&nbsp;&mdash; this is about building it.</p>
-              <div className="mantra-marks right">"</div>
-            </blockquote>
+                {/* ── Right: sub-content + CTA ── */}
+                <div className="hero-meta">
 
-          </section>
+                  <div className="hero-meta-inner">
+                    <h2 className="sl-hero-sub">
+                      Welcome to the first-ever student-driven startup ecosystem at SVIT Vasad.
+                    </h2>
 
-        </main>
+                    {/* Cyber-grid left-bar paragraph */}
+                    <div className="hero-body-frame">
+                      <p className="sl-hero-body">
+                        Almost everyone has envisioned a project or an idea capable of generating
+                        massive social impact. But the real question is: <strong>Can you execute it?</strong>{' '}
+                        Proper execution requires structured guidance, dedicated mentorship, and a
+                        resilient entrepreneurial mindset.{' '}
+                        <strong>THE BUILDEX CLUB</strong> exists to bridge that critical gap.
+                      </p>
+                    </div>
 
-        {/* ── Footer ── */}
-        <footer className="sl-footer">
-          <span className="sl-footer-logo">&lt;BU/LD.EX/&gt;</span>
-          <span className="sl-footer-copy">SVIT Vasad &nbsp;·&nbsp; {new Date().getFullYear()} &nbsp;·&nbsp; All systems nominal</span>
-        </footer>
+                    {/* Futuristic angled CTA */}
+                    <Link to="/portal" className="sl-cta" id="join-ecosystem-btn" aria-label="Join the Ecosystem">
+                      <span className="sl-cta-text">Join the Ecosystem</span>
+                      <ArrowUpRight size={18} className="sl-cta-icon" aria-hidden="true" />
+                      <span className="sl-cta-pulse" aria-hidden="true" />
+                    </Link>
+                  </div>
 
-      </div>
+                  {/* Vertical coordinate tag */}
+                  <p className="hero-coord">
+                    22.5726°N / 73.1856°E — Vadodara District
+                  </p>
+                </div>
+              </div>
+
+              {/* Scroll hint */}
+              <motion.a
+                href="#about"
+                className="sl-scroll-hint"
+                aria-label="Scroll to Blueprint"
+                animate={{ y: [0, 8, 0] }}
+                transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
+              >
+                <span className="hint-bar" />
+                <span>scroll</span>
+              </motion.a>
+            </section>
+
+            {/* ════════════════════════════════
+                BLUEPRINT / ABOUT
+            ════════════════════════════════ */}
+            <section id="about" className="sl-blueprint" aria-labelledby="blueprint-h2">
+
+              <div className="blueprint-label-row">
+                <span className="sl-section-label">// THE BLUEPRINT</span>
+                <span className="section-rule" aria-hidden="true" />
+              </div>
+
+              <h2 className="sl-section-title metallic-gradient" id="blueprint-h2">
+                Ecosystem<br />Foundations
+              </h2>
+
+              <p className="sl-section-sub">
+                Every BuildEx initiative maps back to three strategic pillars — each engineered
+                to push execution beyond the classroom.
+              </p>
+
+              {/* Staggered, slightly-overlapping pillar cards */}
+              <div className="blueprint-grid">
+                {PILLARS.map((p, i) => (
+                  <motion.div
+                    key={p.id}
+                    className="blueprint-card"
+                    style={{
+                      '--accent': p.accent,
+                      '--card-offset': `${p.offset}px`,
+                    }}
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{
+                      duration: 0.7,
+                      ease: [0.16, 1, 0.3, 1],
+                      delay: i * 0.18,
+                    }}
+                  >
+                    <div className="bc-glass">
+                      <span className="bc-num">{p.num}</span>
+                      <div className="bc-accent-bar" aria-hidden="true" />
+                      <h3 className="bc-title">{p.title}</h3>
+                      <p  className="bc-desc">{p.desc}</p>
+                    </div>
+                    <div className="bc-glow" aria-hidden="true" />
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Core Mantra */}
+              <motion.blockquote
+                className="sl-mantra"
+                initial={{ opacity: 0, scale: 0.97 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+              >
+                <div className="mantra-mark left">"</div>
+                <p>This isn&rsquo;t about learning business&nbsp;&mdash; this is about <em>building it.</em></p>
+                <div className="mantra-mark right">"</div>
+                <div className="mantra-glow" aria-hidden="true" />
+              </motion.blockquote>
+
+            </section>
+          </main>
+
+          {/* Footer */}
+          <footer className="sl-footer">
+            <span className="sl-footer-logo">&lt;BU/LD.EX/&gt;</span>
+            <span className="sl-footer-copy">SVIT Vasad &nbsp;·&nbsp; {new Date().getFullYear()} &nbsp;·&nbsp; All systems nominal</span>
+          </footer>
+        </motion.div>
+      )}
     </div>
   );
 }
