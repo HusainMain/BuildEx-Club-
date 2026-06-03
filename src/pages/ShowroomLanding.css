@@ -100,8 +100,8 @@ html { scroll-behavior: smooth; }
 
 /* Static logo image — locked top-left with neon cyan drop-shadow */
 .sl-logo-img {
-  height: 40px;
-  width: auto;
+  width: 140px;
+  height: auto;
   object-fit: contain;
   display: block;
   flex-shrink: 0;

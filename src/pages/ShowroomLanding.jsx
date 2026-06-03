@@ -63,54 +63,25 @@ function AmbientCanvas() {
    'site'   → video unmounted. Full site rendered.
 ═══════════════════════════════════════════════════════════ */
 export default function ShowroomLanding() {
-  /* Check sessionStorage synchronously so there is zero flash */
-  const alreadyPlayed = sessionStorage.getItem('hasPlayedCinematicIntro') === 'true';
-  const [phase, setPhase] = useState(alreadyPlayed ? 'site' : 'intro');
+  const [phase, setPhase] = useState('intro');
 
-  const videoRef   = useRef(null);
-  const safeTimer  = useRef(null);
-
-  /* ── Attach video event listeners once we are in 'intro' ─ */
+  // Explicit useEffect hook that runs on mount
   useEffect(() => {
-    if (phase !== 'intro') return;
+    const isDone = sessionStorage.getItem('buildex_intro_done') === 'true';
+    if (isDone) {
+      setPhase('site');
+    } else {
+      setPhase('intro');
+    }
+  }, []);
 
-    const vid = videoRef.current;
-    if (!vid) return;
-
-    /* ── The one function that triggers the fade ────────── */
-    const startFade = () => {
-      /* Clear any pending safety timers */
-      if (safeTimer.current) clearTimeout(safeTimer.current);
-
-      setPhase('fading');
-
-      /* After fade CSS transition (800 ms), mount the site */
-      setTimeout(() => {
-        setPhase('site');
-        sessionStorage.setItem('hasPlayedCinematicIntro', 'true');
-      }, 850);
-    };
-
-    /* Primary trigger: natural video end */
-    vid.addEventListener('ended', startFade, { once: true });
-
-    /* Fallback 1: once metadata loads, schedule by exact duration */
-    const onMeta = () => {
-      const durationMs = (vid.duration > 0 ? vid.duration : 5) * 1000;
-      /* Give 500 ms of grace after duration ends */
-      safeTimer.current = setTimeout(startFade, durationMs + 500);
-    };
-    vid.addEventListener('loadedmetadata', onMeta, { once: true });
-
-    /* Fallback 2: if metadata never fires, hard cap at 12 s */
-    safeTimer.current = setTimeout(startFade, 12000);
-
-    return () => {
-      vid.removeEventListener('ended', startFade);
-      vid.removeEventListener('loadedmetadata', onMeta);
-      if (safeTimer.current) clearTimeout(safeTimer.current);
-    };
-  }, [phase]);
+  const handleVideoEnded = () => {
+    setPhase('fading');
+    setTimeout(() => {
+      setPhase('site');
+      sessionStorage.setItem('buildex_intro_done', 'true');
+    }, 800);
+  };
 
   return (
     <div className="sl-root">
@@ -138,14 +109,15 @@ export default function ShowroomLanding() {
             {/* ── Centered video frame ── */}
             <div className="sl-intro-video-frame">
               <video
-                ref={videoRef}
                 className="sl-intro-video"
                 autoPlay
                 muted
                 playsInline
+                controls={false}
                 preload="auto"
+                onEnded={handleVideoEnded}
               >
-                <source src={VIDEO_SRC} type="video/mp4" />
+                <source src="/Untitled - June 04, 2026 at 00.15.43-nobg.mp4" type="video/mp4" />
                 {/* Fallback text for browsers that reject autoplay */}
                 Your browser does not support HTML5 video.
               </video>
