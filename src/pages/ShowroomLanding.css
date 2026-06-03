@@ -98,26 +98,31 @@ html { scroll-behavior: smooth; }
   max-width: 100%;
 }
 
-/* Neon-glow text logo — locked top-left */
-.sl-logo {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: clamp(0.95rem, 2.5vw, 1.25rem);
-  letter-spacing: -0.03em;
-  white-space: nowrap;
-  color: #4CD7F6;
-  text-shadow:
-    0 0 8px rgba(76, 215, 246, 0.9),
-    0 0 24px rgba(76, 215, 246, 0.5),
-    0 0 56px rgba(76, 215, 246, 0.2);
-  transition: text-shadow 0.3s ease;
+/* Static logo image — locked top-left with neon cyan drop-shadow */
+.sl-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  /* Crisp neon cyan glow via drop-shadow (respects PNG transparency) */
+  filter:
+    drop-shadow(0 0 6px rgba(76, 215, 246, 0.85))
+    drop-shadow(0 0 18px rgba(76, 215, 246, 0.45))
+    drop-shadow(0 0 40px rgba(76, 215, 246, 0.2));
+  transition: filter 0.3s ease;
 }
 
-.sl-logo:hover {
-  text-shadow:
-    0 0 12px rgba(76, 215, 246, 1),
-    0 0 36px rgba(76, 215, 246, 0.7),
-    0 0 80px rgba(76, 215, 246, 0.35);
+.sl-logo-img:hover {
+  filter:
+    drop-shadow(0 0 10px rgba(76, 215, 246, 1))
+    drop-shadow(0 0 28px rgba(76, 215, 246, 0.7))
+    drop-shadow(0 0 60px rgba(76, 215, 246, 0.35));
+}
+
+/* Mobile: slightly smaller logo so nav doesn't crowd */
+@media (max-width: 480px) {
+  .sl-logo-img { height: 32px; }
 }
 
 .sl-nav { display: flex; align-items: center; gap: 4px; }
