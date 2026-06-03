@@ -110,7 +110,7 @@ export default function ShowroomLanding() {
             <div className="sl-intro-video-frame">
               <video
                 className="sl-intro-video"
-                src="/Untitled - June 04, 2026 at 00.15.43-nobg.mp4?v=1"
+                src="/intro-video.mp4?v=2"
                 autoPlay={true}
                 muted={true}
                 playsInline={true}
