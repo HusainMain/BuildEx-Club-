@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { AuroraOrbs, PerspectiveGrid, StarField } from '../components/VengeanceUI';
 import './ShowroomLanding.css';
 
@@ -56,105 +55,30 @@ function AmbientCanvas() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PHASE MACHINE
-   'intro'  → full-screen video only. Site is null.
-   'fading' → video fades out over 800 ms. Site is still null.
-   'site'   → video unmounted. Full site rendered.
-═══════════════════════════════════════════════════════════ */
 export default function ShowroomLanding() {
-  const [phase, setPhase] = useState('intro');
-
-  // Explicit useEffect hook that runs on mount
-  useEffect(() => {
-    const isDone = sessionStorage.getItem('buildex_intro_done') === 'true';
-    if (isDone) {
-      setPhase('site');
-    } else {
-      setPhase('intro');
-    }
-  }, []);
-
-  const handleVideoEnded = () => {
-    setPhase('fading');
-    setTimeout(() => {
-      setPhase('site');
-      sessionStorage.setItem('buildex_intro_done', 'true');
-    }, 800);
-  };
-
   return (
     <div className="sl-root">
       {/* Ambient depth — rendered regardless of phase */}
       <AmbientCanvas />
 
       {/* ════════════════════════════════════════════════
-          PHASE 1 + FADING  —  INTRO STAGE
-          AnimatePresence drives the exit fade animation.
-          The main site JSX is NOT rendered here at all.
+          MAIN SITE
       ════════════════════════════════════════════════ */}
-      <AnimatePresence>
-        {(phase === 'intro' || phase === 'fading') && (
-          <motion.div
-            key="intro-stage"
-            className="sl-intro-stage"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.85, ease: [0.65, 0, 0.35, 1] }}
-          >
-            {/* ── Blur + dark backdrop ── */}
-            <div className="sl-intro-backdrop" />
-
-            {/* ── Centered video frame ── */}
-            <div className="sl-intro-video-frame">
-              <video
-                className="sl-intro-video"
-                src="/intro-video.mp4?v=2"
-                autoPlay={true}
-                muted={true}
-                playsInline={true}
-                controls={false}
-                preload="auto"
-                onEnded={handleVideoEnded}
-              >
-                {/* Fallback text for browsers that reject autoplay */}
-                Your browser does not support HTML5 video.
-              </video>
-            </div>
-
-            {/* ── Failsafe Skip Button ── */}
-            <button className="sl-skip-btn" onClick={handleVideoEnded}>
-              Skip Intro &rarr;
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ════════════════════════════════════════════════
-          PHASE 3  —  MAIN SITE
-          Only mounted once sessionStorage key is set.
-      ════════════════════════════════════════════════ */}
-      {phase === 'site' && (
-        <motion.div
-          className="sl-site"
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {/* ── Sticky Header ──────────────────────── */}
-          <header className="sl-header" id="top">
-            {/* Static logo image — neon glow applied via CSS */}
-            <img
-              src={LOGO_SRC}
-              alt="BuildEx Logo"
-              className="sl-logo-img"
-            />
-            <nav className="sl-nav" aria-label="Primary navigation">
-              <a href="#top"   className="sl-nav-link">Home</a>
-              <a href="#about" className="sl-nav-link">About</a>
-            </nav>
-          </header>
+      <motion.div
+        className="sl-site"
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {/* ── Sticky Header ──────────────────────── */}
+        <header className="sl-header" id="top">
+          {/* Text-based futuristic logo */}
+          <span className="sl-text-logo">BUILDEX</span>
+          <nav className="sl-nav" aria-label="Primary navigation">
+            <a href="#top"   className="sl-nav-link">Home</a>
+            <a href="#about" className="sl-nav-link">About</a>
+          </nav>
+        </header>
 
           <main>
             {/* ════════════════════════════════════
@@ -283,13 +207,12 @@ export default function ShowroomLanding() {
           </main>
 
           <footer className="sl-footer">
-            <span className="sl-footer-logo">&lt;BU/LD.EX/&gt;</span>
+            <span className="sl-footer-logo">BUILDEX</span>
             <span className="sl-footer-copy">
               SVIT Vasad &nbsp;·&nbsp; {new Date().getFullYear()} &nbsp;·&nbsp; All systems nominal
             </span>
           </footer>
         </motion.div>
-      )}
     </div>
   );
 }
