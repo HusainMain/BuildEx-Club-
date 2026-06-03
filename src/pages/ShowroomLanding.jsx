@@ -7,7 +7,7 @@ import './ShowroomLanding.css';
 
 /* ─── Asset paths (Vite serves /public/** at root) ──────── */
 const VIDEO_SRC = '/Untitled - June 04, 2026 at 00.15.43-nobg.mp4';
-const LOGO_SRC  = '/Untitled_-_June_04__2026_at_00.15.43-removebg-preview.png';
+const LOGO_SRC  = '/buildex-logo.png';
 
 /* ─── Pillar data ─────────────────────────────────────────  */
 const PILLARS = [
