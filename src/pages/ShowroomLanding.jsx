@@ -110,18 +110,23 @@ export default function ShowroomLanding() {
             <div className="sl-intro-video-frame">
               <video
                 className="sl-intro-video"
-                autoPlay
-                muted
-                playsInline
+                src="/Untitled - June 04, 2026 at 00.15.43-nobg.mp4?v=1"
+                autoPlay={true}
+                muted={true}
+                playsInline={true}
                 controls={false}
                 preload="auto"
                 onEnded={handleVideoEnded}
               >
-                <source src="/Untitled - June 04, 2026 at 00.15.43-nobg.mp4" type="video/mp4" />
                 {/* Fallback text for browsers that reject autoplay */}
                 Your browser does not support HTML5 video.
               </video>
             </div>
+
+            {/* ── Failsafe Skip Button ── */}
+            <button className="sl-skip-btn" onClick={handleVideoEnded}>
+              Skip Intro &rarr;
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
